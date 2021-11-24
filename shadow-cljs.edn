@@ -1,0 +1,4 @@
+{:source-paths ["src" "test"]
+ :builds       {:test {:extra-paths ["src" "test"]
+                       :target      :node-test
+                       :output-to   "out/node-tests.js"}}}
