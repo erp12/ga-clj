@@ -27,7 +27,8 @@ Outline
 We recommend declaring your ga-clj dependency using git coordinates. Add the following to your `deps.edn`.
 
 ```clojure
-{io.github.erp12/ga-clj {:git/sha "TBD"}}
+;; Add to 
+{io.github.erp12/ga-clj {:git/tag "0.0.1" :git/sha "7cec443"}}
 ```
 
 In the future, we may also publish releases to Clojars.
