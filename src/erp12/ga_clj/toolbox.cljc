@@ -25,12 +25,45 @@
   (fn [population]
     (apply min-key by (take size (shuffle population)))))
 
-;; @todo How to handle downsampled lexicase selection? Where do cases come from?
+
+(defn lexicase-selection
+  "Helper for make-lexicase-selection. Takes the population and cases shuffled
+   in a random order. Behaves deterministically to aid in testing."
+  [candidates cases]
+  ;; Stop when cases is empty or candidates has only 1 left.
+  (if (or (empty? cases)
+          (= 1 (count candidates)))
+    (rand-nth candidates)
+    (let [the-case (first cases)
+          best (apply min (map #(nth (:errors %) the-case)
+                               candidates))]
+      (recur (filter #(= best (nth (:errors %) the-case))
+                     candidates)
+             (rest cases)))))
+
+;; @todo Implement epsilon lexicase
+(defn epsilon-lexicase-selection
+  "Epsilon lexicase."
+  [candidates cases epsilon]
+  :TODO)
+
+;; @todo How to handle downsampled lexicase selection?
+;;                       |--> downsampling I assume would happen wherever individuals
+;;                            are evaluated, not here
+;; @todo Pre-selection filtering of the population? Maybe only if using lexicase-selection?
 (defn make-lexicase-selection
+  "Applies lexicase selection to the population, returning a single individual."
   [{:keys [epsilon]}]
   (fn [population]
-    ;; @todo Write me!
-    ))
+    (let [cases (shuffle (range (count (:errors (first population)))))]
+      (if (or (nil? epsilon)
+              (zero? epsilon))
+        (lexicase-selection population
+                            cases)
+        (epsilon-lexicase-selection population
+                                    cases
+                                    epsilon)))))
+
 
 ;; Mutation
 
