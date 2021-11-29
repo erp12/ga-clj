@@ -42,10 +42,14 @@
              (rest cases)))))
 
 ;; @todo Implement epsilon lexicase
+;; Not sure how where I would calculate epsilons just once per generation.
 (defn epsilon-lexicase-selection
-  "Epsilon lexicase."
-  [candidates cases epsilon]
-  :TODO)
+  "Implements semi-dynamic epsilon lexicase, which seems best in trial.
+   semi-dynamic = use local best, but global epsilons that are calculated
+   only once per generation."
+  [candidates cases]
+  :TODO
+  )
 
 ;; @todo How to handle downsampled lexicase selection?
 ;;                       |--> downsampling I assume would happen wherever individuals
@@ -53,16 +57,14 @@
 ;; @todo Pre-selection filtering of the population? Maybe only if using lexicase-selection?
 (defn make-lexicase-selection
   "Applies lexicase selection to the population, returning a single individual."
-  [{:keys [epsilon]}]
+  [{:keys [use-epsilon-lexicase]}]
   (fn [population]
     (let [cases (shuffle (range (count (:errors (first population)))))]
-      (if (or (nil? epsilon)
-              (zero? epsilon))
+      (if use-epsilon-lexicase
         (lexicase-selection population
                             cases)
         (epsilon-lexicase-selection population
-                                    cases
-                                    epsilon)))))
+                                    cases)))))
 
 
 ;; Mutation
@@ -73,6 +75,30 @@
   (let [gn (vec genome)
         [idx1 idx2] (repeatedly 2 #(rand-int (count gn)))]
     (assoc gn idx2 (gn idx1) idx1 (gn idx2))))
+
+
+(defn uniform-addition
+  [genome addition-rate genetic-source]
+  (apply concat
+         (map #(if (< (rand) addition-rate)
+                 (if (< (rand) 0.5)
+                   (list % (rand-nth genetic-source))
+                   (list (rand-nth genetic-source) %))
+                 (list %))
+              genome)))
+
+(defn uniform-deletion
+  [genome deletion-rate]
+  (random-sample (- 1.0 deletion-rate) genome))
+
+(defn umad
+  "Performs uniform mutation by addition and deletion.
+   First pass adds a new gene before or after each gene in the genome.
+   Second pass deletes genes with some probability."
+  [genome addition-rate deletion-rate genetic-source]
+  (-> genome
+      (uniform-addition addition-rate genetic-source)
+      (uniform-deletion deletion-rate)))
 
 
 ;; Recombination
