@@ -29,42 +29,45 @@
 (defn lexicase-selection
   "Helper for make-lexicase-selection. Takes the population and cases shuffled
    in a random order. Behaves deterministically to aid in testing."
-  [candidates cases]
+  [candidates cases errors-key]
   ;; Stop when cases is empty or candidates has only 1 left.
   (if (or (empty? cases)
           (= 1 (count candidates)))
     (rand-nth candidates)
     (let [the-case (first cases)
-          best (apply min (map #(nth (:errors %) the-case)
+          best (apply min (map #(nth (get % errors-key) the-case)
                                candidates))]
-      (recur (filter #(= best (nth (:errors %) the-case))
+      (recur (filter #(= best (nth (get % errors-key) the-case))
                      candidates)
-             (rest cases)))))
+             (rest cases)
+             errors-key))))
 
 ;; @todo Implement epsilon lexicase
 ;; Not sure how where I would calculate epsilons just once per generation.
 (defn epsilon-lexicase-selection
-  "Implements semi-dynamic epsilon lexicase, which seems best in trial.
+  "Implements semi-dynamic epsilon lexicase, which seems best experimentally.
    semi-dynamic = use local best, but global epsilons that are calculated
    only once per generation."
-  [candidates cases]
+  [candidates cases errors-key]
   :TODO
   )
 
-;; @todo How to handle downsampled lexicase selection?
-;;                       |--> downsampling I assume would happen wherever individuals
-;;                            are evaluated, not here
+
 ;; @todo Pre-selection filtering of the population? Maybe only if using lexicase-selection?
 (defn make-lexicase-selection
-  "Applies lexicase selection to the population, returning a single individual."
-  [{:keys [use-epsilon-lexicase]}]
+  "Applies lexicase selection to the population, returning a single individual.
+   errors-key is the key associated with the error vector in the individual; if
+   missing, defaults to :errors."
+  [{:keys [use-epsilon-lexicase errors-key] :or {errors-key :errors}}]
   (fn [population]
-    (let [cases (shuffle (range (count (:errors (first population)))))]
+    (let [cases (shuffle (range (count (get (first population) errors-key))))]
       (if use-epsilon-lexicase
         (lexicase-selection population
-                            cases)
+                            cases
+                            errors-key)
         (epsilon-lexicase-selection population
-                                    cases)))))
+                                    cases
+                                    errors-key)))))
 
 
 ;; Mutation
@@ -79,13 +82,12 @@
 
 (defn uniform-addition
   [genome addition-rate genetic-source]
-  (apply concat
-         (map #(if (< (rand) addition-rate)
-                 (if (< (rand) 0.5)
-                   (list % (rand-nth genetic-source))
-                   (list (rand-nth genetic-source) %))
-                 (list %))
-              genome)))
+  (mapcat #(if (< (rand) addition-rate)
+             (if (< (rand) 0.5)
+               (list % (rand-nth genetic-source))
+               (list (rand-nth genetic-source) %))
+             (list %))
+          genome))
 
 (defn uniform-deletion
   [genome deletion-rate]
