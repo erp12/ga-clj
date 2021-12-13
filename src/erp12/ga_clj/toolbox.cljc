@@ -35,9 +35,9 @@
           (= 1 (count candidates)))
     (rand-nth candidates)
     (let [the-case (first cases)
-          best (apply min (map #(nth (get % errors-key) the-case)
+          best (apply min (map #(nth (errors-key %) the-case)
                                candidates))]
-      (recur (filter #(= best (nth (get % errors-key) the-case))
+      (recur (filter #(= best (nth (errors-key %) the-case))
                      candidates)
              (rest cases)
              errors-key))))
