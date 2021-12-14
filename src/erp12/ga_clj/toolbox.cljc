@@ -25,12 +25,50 @@
   (fn [population]
     (apply min-key by (take size (shuffle population)))))
 
-;; @todo How to handle downsampled lexicase selection? Where do cases come from?
+
+(defn lexicase-selection
+  "Helper for make-lexicase-selection. Takes the population and cases shuffled
+   in a random order. Behaves deterministically to aid in testing."
+  [candidates cases errors-key]
+  ;; Stop when cases is empty or candidates has only 1 left.
+  (if (or (empty? cases)
+          (= 1 (count candidates)))
+    (rand-nth candidates)
+    (let [the-case (first cases)
+          best (apply min (map #(nth (errors-key %) the-case)
+                               candidates))]
+      (recur (filter #(= best (nth (errors-key %) the-case))
+                     candidates)
+             (rest cases)
+             errors-key))))
+
+;; @todo Implement epsilon lexicase
+;; Not sure how where I would calculate epsilons just once per generation.
+(defn epsilon-lexicase-selection
+  "Implements semi-dynamic epsilon lexicase, which seems best experimentally.
+   semi-dynamic = use local best, but global epsilons that are calculated
+   only once per generation."
+  [candidates cases errors-key]
+  :TODO
+  )
+
+
+;; @todo Pre-selection filtering of the population? Maybe only if using lexicase-selection?
 (defn make-lexicase-selection
-  [{:keys [epsilon]}]
+  "Applies lexicase selection to the population, returning a single individual.
+   errors-key is the key associated with the error vector in the individual; if
+   missing, defaults to :errors."
+  [{:keys [use-epsilon-lexicase errors-key] :or {errors-key :errors}}]
   (fn [population]
-    ;; @todo Write me!
-    ))
+    (let [cases (shuffle (range (count (get (first population) errors-key))))]
+      (if use-epsilon-lexicase
+        (lexicase-selection population
+                            cases
+                            errors-key)
+        (epsilon-lexicase-selection population
+                                    cases
+                                    errors-key)))))
+
 
 ;; Mutation
 
@@ -40,6 +78,29 @@
   (let [gn (vec genome)
         [idx1 idx2] (repeatedly 2 #(rand-int (count gn)))]
     (assoc gn idx2 (gn idx1) idx1 (gn idx2))))
+
+
+(defn uniform-addition
+  [genome addition-rate genetic-source]
+  (mapcat #(if (< (rand) addition-rate)
+             (if (< (rand) 0.5)
+               (list % (rand-nth genetic-source))
+               (list (rand-nth genetic-source) %))
+             (list %))
+          genome))
+
+(defn uniform-deletion
+  [genome deletion-rate]
+  (random-sample (- 1.0 deletion-rate) genome))
+
+(defn umad
+  "Performs uniform mutation by addition and deletion.
+   First pass adds a new gene before or after each gene in the genome.
+   Second pass deletes genes with some probability."
+  [genome addition-rate deletion-rate genetic-source]
+  (-> genome
+      (uniform-addition addition-rate genetic-source)
+      (uniform-deletion deletion-rate)))
 
 
 ;; Recombination
