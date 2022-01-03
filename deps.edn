@@ -17,5 +17,5 @@
                                     :output-path  "../ga-clj-DOC"
                                     :source-uri   "https://github.com/erp12/ga-clj/blob/{version}/{filepath}#L{line}"
                                     :project      {:name        "GA CLJ"
-                                                   :version     "0.0.0"
+                                                   :version     "0.0.2"
                                                    :description "No-assumptions genetic algorithms in Clojure"}}}}}
