@@ -1,6 +1,6 @@
 (ns erp12.ga-clj.utils-test
   (:require [clojure.test :refer [deftest is testing]]
-            [erp12.ga-clj.utils :refer [min-by-cmp with-error-context]])
+            [erp12.ga-clj.utils :refer [min-by-cmp random-distinct-by with-error-context]])
   #?(:clj (:import (clojure.lang ExceptionInfo))))
 
 (deftest min-by-cmp-test
@@ -9,6 +9,15 @@
   (is (nil? (min-by-cmp (comparator <) [])))
   (is (= (min-by-cmp (comparator <) [1 1 1])
          1)))
+
+(deftest random-distinct-by-test
+  (let [results (map sort (repeatedly 100 #(random-distinct-by count ["dog" "cat" "fish" "bird"])))]
+    (doseq [result results]
+      (is (contains? #{'("dog" "fish")
+                       '("bird" "cat")
+                       '("bird" "dog")
+                       '("cat" "fish")}
+                     result)))))
 
 (deftest with-error-context-test
   (let [e (try

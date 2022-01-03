@@ -22,12 +22,18 @@
   (process-result (b/process {:command-args ["node" "out/node-tests.js"]}))
   opts)
 
+(defn example
+  [opts]
+  ;; @todo Pass args to example file.
+  (process-result (b/process {:command-args ["clojure" "-M:examples" "-m" (name (:ns opts))]})))
+
 (defn examples
-  [_]
-  (doseq [example-ns ['erp12.ga-clj.examples.alphabet]]
+  [opts]
+  (doseq [example-ns ['erp12.ga-clj.examples.alphabet
+                      'erp12.ga-clj.examples.symbolic-regression]]
     (println "\nRunning example" example-ns)
     ;; @todo Pass smaller population sizes and max generations to examples via command args to keep CI fast.
-    (process-result (b/process {:command-args ["clojure" "-M:examples" "-m" (name example-ns)]}))))
+    (example (assoc opts :ns example-ns))))
 
 (defn ci
   [opts]

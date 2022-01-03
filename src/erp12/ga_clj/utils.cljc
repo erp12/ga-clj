@@ -15,6 +15,13 @@
                  el
                  (if (neg? (cmp el mn)) el mn)))))))
 
+(defn random-distinct-by
+  [by coll]
+  (->> coll
+       shuffle
+       (reduce (fn [acc el] (update acc (by el) #(or % el))) {})
+       vals))
+
 (defn- platform
   "Given a macro's environment, returns a keyword denoting the platform which the post-expansion
   code will be running in. For example, `:clj` for Clojure and `:cljs` for Clojurescript.
