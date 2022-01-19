@@ -76,7 +76,7 @@
                 ;; Before each generation (evaluation), randomly select 5% of the training
                 ;; cases to use for evaluation. All genomes in the generation will be evaluated
                 ;; on these same cases.
-                :pre-generation     (fn []
+                :pre-generation     (fn [{:keys [step]}]
                                       {:batch-cases (random-sample 0.05 (range (count x-train)))})
                 ;; Individuals are a maps containing
                 ;;   1. A `:model` represented as a callable Clojure funciton.
@@ -84,7 +84,7 @@
                 ;;   3. A vector of `:errors`, one for each training case in this generation's batch.
                 ;;   4. The mean error across all cases, stored under `:mae`.
                 ;;   5. The `:genome` tree which created the model. This is added implicitly.
-                :genome->individual (fn [gn {:keys [batch-cases]}]
+                :individual-factory (fn [gn {:keys [batch-cases]}]
                                       (let [model (eval `(fn ~(vector 'x) ~gn))
                                             x-batch (mapv #(nth x-train %) batch-cases)
                                             y-batch (mapv #(nth y-train %) batch-cases)
@@ -97,7 +97,7 @@
                 ;; After each generation is evaluated, compute a vector of `:epsilon` values
                 ;; to use in parent selection. In this case, we will use the default computation
                 ;; of epsilon: the median absolute deviation.
-                :post-generation    (fn [population]
+                :post-generation    (fn [{:keys [population] :as opts}]
                                       {:epsilon (tb/compute-epsilon-per-case population)})
                 ;; To "breed" a new genome from the population, we:
                 ;;   1. Select 2 parents with lexicsae selection. This will look-up
@@ -114,14 +114,14 @@
                 ;; We stop evolution when either:
                 ;;   1. We reach 300 generations.
                 ;;   2. We find an individual with zero MAE on the entire dataset.
-                :stop-fn            (fn [{:keys [generation-number best new-best?]}]
-                                      (println "Generation:" generation-number
+                :stop-fn            (fn [{:keys [step best new-best?]}]
+                                      (println "Step:" step
                                                "Best MAE:" (:mae best)
                                                "Best Tree Size:" (tb/tree-size (:genome best))
                                                "Best Tree Depth:" (tb/tree-depth (:genome best)))
                                       (cond
                                         ;; Stop evolution after 300 generations.
-                                        (= generation-number 300) :max-generation-reached
+                                        (= step 300) :max-generation-reached
                                         ;; If a new "best" individual is found (based on MEA of a batch)
                                         ;; Test the new best individual on the full training set.
                                         ;; If the full MAE is below 0.3, report that the solution is found

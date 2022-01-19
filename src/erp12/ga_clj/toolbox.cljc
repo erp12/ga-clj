@@ -146,8 +146,8 @@
                               epsilon)
           threshold (+ (apply min (map get-error candidates)) epsilon-this-case)]
       (recur (assoc opts
-                    :candidates (filter #(<= (get-error %) threshold) candidates)
-                    :cases (rest cases))))))
+               :candidates (filter #(<= (get-error %) threshold) candidates)
+               :cases (rest cases))))))
 
 (defn make-lexicase-selection
   "Creates a selection function for performing lexicase selection. See`lexicase-selection`.\n

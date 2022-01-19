@@ -3,6 +3,30 @@
             [kixi.stats.math :as math]
             [erp12.ga-clj.toolbox :as tb]))
 
+#?(:clj
+   (defmacro with-seed
+     [seed & body]
+     `(let [r# (java.util.Random. ~seed)]
+        (with-redefs [rand (fn
+                             ([] (.nextDouble r#))
+                             ([n#] (* n# (.nextDouble r#))))
+                      rand-int (fn [n#] (int (rand n#)))
+                      rand-nth (fn [coll#]
+                                 (nth coll# (rand-int (count coll#))))
+                      shuffle (fn [coll#]
+                                (let [al# (java.util.ArrayList. coll#)]
+                                  (java.util.Collections/shuffle al# r#)
+                                  (vec (.toArray al#))))
+                      random-sample (fn
+                                      ([prob#]
+                                       (filter (fn [_#] (< (rand) prob#))))
+                                      ([prob# coll#]
+                                       (filter (fn [_#] (< (rand) prob#)) coll#)))]
+          ~@body))))
+
+
+;;;;;;;;;;
+
 (deftest mean-test
   (is (= 2.0 (tb/mean [3 2 1]))))
 
@@ -56,3 +80,32 @@
       (is (= :A (:name (tb/lexicase-selection {:candidates population :cases '(1 0 3 2 4) :errors-fn :errors}))))
       (is (= :C (:name (tb/lexicase-selection {:candidates population :cases '(2 4 3 0 1) :errors-fn :errors}))))
       (is (= :E (:name (tb/lexicase-selection {:candidates population :cases '(2 0 3 4 1) :errors-fn :errors})))))))
+
+(deftest uniform-addition-test
+  (let [mutate (tb/make-uniform-addition {:addition-rate  0.5
+                                          :genetic-source #(rand-nth [:g :t :a :c])})
+        genome (repeat 10 :_)]
+    #?(:clj
+       (is (= '(:_ :_ :t :_ :c :_ :_ :_ :_ :t :_ :a :_ :_ :g)
+              (with-seed 1 (doall (mutate genome)))))
+       :cljs
+       (mutate genome))))
+
+(deftest uniform-deletion-test
+  (let [mutate (tb/make-uniform-deletion {:deletion-rate 0.5})
+        genome '(:a :b :c :d :e :f :g :h :i :j)]
+    #?(:clj
+       (is (= '(:b :c :d :f)
+              (with-seed 1 (doall (mutate genome)))))
+       :cljs
+       (mutate genome))))
+
+(deftest umad-test
+  (let [mutate (tb/make-size-neutral-umad {:rate           0.5
+                                           :genetic-source #(rand-nth [:g :t :a :c])})
+        genome '(:_0 :_1 :_2 :_3 :_4 :_5 :_6 :_7 :_8 :_9)]
+    #?(:clj
+       (is (= '(:t :_2 :_3 :_5 :g :a :_6 :_7 :_8 :g)
+              (with-seed 1 (doall (mutate genome)))))
+       :cljs
+       (mutate genome))))

@@ -16,10 +16,10 @@
                  (if (neg? (cmp el mn)) el mn)))))))
 
 (defn random-distinct-by
-  [by coll]
+  [f coll]
   (->> coll
        shuffle
-       (reduce (fn [acc el] (update acc (by el) #(or % el))) {})
+       (reduce (fn [acc el] (update acc (f el) #(or % el))) {})
        vals))
 
 (defn- platform
