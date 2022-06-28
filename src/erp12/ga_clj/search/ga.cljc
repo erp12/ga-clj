@@ -1,4 +1,4 @@
-(ns erp12.ga-clj.generational
+(ns erp12.ga-clj.search.ga
   "A simple generational genetic algorithm."
   (:require [erp12.ga-clj.individual :as i]
             [erp12.ga-clj.utils :as u]))
@@ -35,7 +35,7 @@
       (fn [config]
         (mapper #(i/make-individual individual-factory % config) genomes)))))
 
-(defn evolve
+(defn run
   "Run a generational genetic algorithm.
 
   Options:
