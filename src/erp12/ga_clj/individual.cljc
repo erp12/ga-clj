@@ -15,9 +15,11 @@
    If an exception is raised while building the individual, it will be wrapped
    in an outer exception that includes the genome in the `ex-data` to aid in
    debugging."
-  [genome->individual genome opts]
-  (with-error-context
-    {:msg    "Failed to create individual from genome."
-     :genome genome
-     :opts   opts}
-    (assoc (genome->individual genome opts) :genome genome)))
+  ([genome->individual genome]
+   (make-individual genome->individual genome {}))
+  ([genome->individual genome opts]
+   (with-error-context
+     {:msg    "Failed to create individual from genome."
+      :genome genome
+      :opts   opts}
+     (assoc (genome->individual genome opts) :genome genome))))
