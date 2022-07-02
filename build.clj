@@ -30,7 +30,8 @@
 (defn examples
   [opts]
   (doseq [example-ns ['erp12.ga-clj.examples.alphabet
-                      'erp12.ga-clj.examples.symbolic-regression]]
+                      'erp12.ga-clj.examples.symbolic-regression
+                      'erp12.ga-clj.examples.alphabet-annealing]]
     (println "\nRunning example" example-ns)
     ;; @todo Pass smaller population sizes and max generations to examples via command args to keep CI fast.
     (example (assoc opts :ns example-ns))))
