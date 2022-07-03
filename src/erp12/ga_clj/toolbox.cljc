@@ -9,9 +9,9 @@
 
   Some functions make assumptions about the structure of genomes and/or the attributes of individuals.
   See function docstrings for more details."
-  (:require [kixi.stats.math :as math]
+  (:require [erp12.ga-clj.utils :as u]
             [kixi.stats.core :as stat]
-            [erp12.ga-clj.utils :as u]))
+            [kixi.stats.math :as math]))
 
 ;; Errors / Loss
 
@@ -179,7 +179,12 @@
                                         (u/random-distinct-by errors-fn population)
                                         population)
                           :errors-fn  errors-fn
-                          :cases      (shuffle (range (count (errors-fn (first population)))))
+                          :cases      (let [;; Take the min number of cases.
+                                            ;; Sometimes error vectors are padded in edge cases where penalties are
+                                            ;; applied without knowledge of the number of cases.
+                                            ;; @todo Reconsider if this is a good idea.
+                                            num-cases (->> population (map #(count (errors-fn %))) (reduce min))]
+                                        (shuffle (range num-cases)))
                           :epsilon    (get-epsilon epsilon (dissoc generation :population))}))))
 
 ;; Mutation
