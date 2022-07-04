@@ -30,6 +30,8 @@
       (if (some? result)
         {:step   step
          :result result
-         :best   best}
+         :best   (if (< (::error neighbor) (::error best))
+                   neighbor
+                   best)}
         (recur (inc step)
                (if accept? neighbor best))))))
