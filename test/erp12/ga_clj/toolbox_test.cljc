@@ -79,7 +79,12 @@
       (is (= :B (:name (tb/lexicase-selection {:candidates population :cases '(0 3 2 4 1) :errors-fn :errors}))))
       (is (= :A (:name (tb/lexicase-selection {:candidates population :cases '(1 0 3 2 4) :errors-fn :errors}))))
       (is (= :C (:name (tb/lexicase-selection {:candidates population :cases '(2 4 3 0 1) :errors-fn :errors}))))
-      (is (= :E (:name (tb/lexicase-selection {:candidates population :cases '(2 0 3 4 1) :errors-fn :errors})))))))
+      (is (= :E (:name (tb/lexicase-selection {:candidates population :cases '(2 0 3 4 1) :errors-fn :errors})))))
+    (testing "Epsilon lexicase selection"
+      (is (= :B (:name (tb/lexicase-selection {:candidates population
+                                               :cases '(4 1 0 3 2)
+                                               :errors-fn :errors
+                                               :epsilon [1 1 1 1 6]})))))))
 
 (deftest uniform-addition-test
   (let [mutate (tb/make-uniform-addition {:addition-rate  0.5

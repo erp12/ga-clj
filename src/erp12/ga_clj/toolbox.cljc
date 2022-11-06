@@ -144,7 +144,7 @@
           epsilon-this-case (if (indexed? epsilon)
                               (nth epsilon the-case)
                               epsilon)
-          threshold (+ (apply min (map get-error candidates)) epsilon-this-case)]
+          threshold (+ (reduce min (map get-error candidates)) epsilon-this-case)]
       (recur (assoc opts
                :candidates (filter #(<= (get-error %) threshold) candidates)
                :cases (rest cases))))))
@@ -153,17 +153,20 @@
   "Creates a selection function for performing lexicase selection. See`lexicase-selection`.\n
 
   Options:
-    :errors-fn - The function that will extract the error vector from the individual.
-                 Default is :errors.
-    :epsilon   - The value for epsilon, or a strategy for computing epsilon. Default is nil.
-                 See below for details.
+    :errors-fn  - The function that will extract the error vector from the individual.
+                  Default is :errors.
+    :epsilon    - The value for epsilon, or a strategy for computing epsilon. Default is nil.
+                  See below for details.
+    :num-errors - An optional indication of the number of errors to consider. Useful in rare
+                  scenarios with variable length error vectors. Defaults to length of the
+                  error vector for the first individual in the population.
 
   The :epsilon option can be
     - A falsey value. This will result in an epsion of 0, aka traditional lexicase selection.
     - A scalar number.  This will be used the epsilon across all cases
     - An indexed collection of numbers. Each element will be the epsilon for the corresponding
       index of the individuals' error vectors.
-    - A function (specifically ifn?). ...
+    - A function (specifically ifn?).
 
   Citations:
     https://arxiv.org/abs/2106.06085
@@ -172,19 +175,16 @@
     https://arxiv.org/abs/1709.05394"
   ([]
    (make-lexicase-selection {}))
-  ([{:keys [errors-fn epsilon] :or {errors-fn :errors}}]
+  ([{:keys [errors-fn epsilon num-errors] :or {errors-fn :errors}}]
    (fn [{:keys [population] :as generation}]
      (lexicase-selection {:candidates (if (not epsilon)
                                         ;; @todo If epsilon is pre-computed, why can't we distinct the candidates by their errors?
                                         (u/random-distinct-by errors-fn population)
                                         population)
                           :errors-fn  errors-fn
-                          :cases      (let [;; Take the min number of cases.
-                                            ;; Sometimes error vectors are padded in edge cases where penalties are
-                                            ;; applied without knowledge of the number of cases.
-                                            ;; @todo Reconsider if this is a good idea.
-                                            num-cases (->> population (map #(count (errors-fn %))) (reduce min))]
-                                        (shuffle (range num-cases)))
+                          :cases      (let [;; If number of errors isn't provided, use the size of one individual's error vector.
+                                            num-errors (or num-errors (count (errors-fn (first population))))]
+                                        (shuffle (range num-errors)))
                           :epsilon    (get-epsilon epsilon (dissoc generation :population))}))))
 
 ;; Mutation
