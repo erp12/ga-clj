@@ -86,7 +86,7 @@
   http://www0.cs.ucl.ac.uk/staff/W.Langdon/ftp/papers/poli08_fieldguide.pdf
   "
   [{:keys [by size]}]
-  (fn [{:keys [population]}]
+  (fn [population]
     (apply min-key by (take size (shuffle population)))))
 
 (defn compute-epsilon-per-case
@@ -176,16 +176,13 @@
   ([]
    (make-lexicase-selection {}))
   ([{:keys [errors-fn epsilon num-errors] :or {errors-fn :errors}}]
-   (fn [{:keys [population] :as generation}]
-     (lexicase-selection {:candidates (if (not epsilon)
-                                        ;; @todo If epsilon is pre-computed, why can't we distinct the candidates by their errors?
-                                        (u/random-distinct-by errors-fn population)
-                                        population)
+   (fn [individuals context]
+     (lexicase-selection {:candidates individuals
                           :errors-fn  errors-fn
                           :cases      (let [;; If number of errors isn't provided, use the size of one individual's error vector.
-                                            num-errors (or num-errors (count (errors-fn (first population))))]
+                                            num-errors (or num-errors (count (errors-fn (first individuals))))]
                                         (shuffle (range num-errors)))
-                          :epsilon    (get-epsilon epsilon (dissoc generation :population))}))))
+                          :epsilon    (get-epsilon epsilon context)}))))
 
 ;; Mutation
 
@@ -203,7 +200,7 @@
     :addition-rate  - The probability of adding a gene at any particular location.
     :genetic-source - A 0-arg function that returns a (random) gene when called."
   [{:keys [addition-rate genetic-source]}]
-  (fn [genome]
+  (fn uniform-addition [genome]
     (mapcat #(if (< (rand) addition-rate)
                (if (< (rand) 0.5)
                  (list % (genetic-source))
@@ -217,7 +214,7 @@
   Options:
     :deletion-rate  - The probability of removing each gene."
   [{:keys [deletion-rate]}]
-  (fn [genome] (random-sample (- 1.0 deletion-rate) genome)))
+  (fn uniform-deletion [genome] (random-sample (- 1.0 deletion-rate) genome)))
 
 (defn make-umad
   "Creates a mutation function that performs \"Uniform Mutation by Addition and Deletion\"
