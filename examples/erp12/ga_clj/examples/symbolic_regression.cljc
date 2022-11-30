@@ -72,63 +72,63 @@
   [& _]
   (println
     (ga/run {;; Creates a random tree, corresponding to an equation, with a max depth of 3.
-             :genome-factory     #(random-code 3)
-             ;; Before each generation (evaluation), randomly select 5% of the training
+             :genome-factory  #(random-code 3)
+             ;; Before each evaluation, randomly select 5% of the training
              ;; cases to use for evaluation. All genomes in the generation will be evaluated
              ;; on these same cases.
-             :pre-generation     (fn [{:keys [step]}]
-                                   {:batch-cases (random-sample 0.05 (range (count x-train)))})
+             :pre-eval        (fn [state]
+                                {:batch-cases (random-sample 0.05 (range (count x-train)))})
              ;; Individuals are a maps containing
              ;;   1. A `:model` represented as a callable Clojure funciton.
              ;;   2. A vector of predictions, stored under `:y-pred`.
              ;;   3. A vector of `:errors`, one for each training case in this generation's batch.
              ;;   4. The mean error across all cases, stored under `:mae`.
              ;;   5. The `:genome` tree which created the model. This is added implicitly.
-             :individual-factory (fn [gn {:keys [batch-cases]}]
-                                   (let [model (eval `(fn ~(vector 'x) ~gn))
-                                         x-batch (mapv #(nth x-train %) batch-cases)
-                                         y-batch (mapv #(nth y-train %) batch-cases)
-                                         y-pred (mapv model x-batch)
-                                         errors (mapv #(Math/abs (- %1 %2)) y-pred y-batch)]
-                                     {:model  model
-                                      :y-pred y-pred
-                                      :errors errors
-                                      :mae    (tb/mean errors)}))
+             :evaluator       (fn [gn {:keys [batch-cases]}]
+                                (let [model (eval `(fn ~(vector 'x) ~gn))
+                                      x-batch (mapv #(nth x-train %) batch-cases)
+                                      y-batch (mapv #(nth y-train %) batch-cases)
+                                      y-pred (mapv model x-batch)
+                                      errors (mapv #(Math/abs (- %1 %2)) y-pred y-batch)]
+                                  {:model  model
+                                   :y-pred y-pred
+                                   :errors errors
+                                   :mae    (tb/mean errors)}))
              ;; After each generation is evaluated, compute a vector of `:epsilon` values
              ;; to use in parent selection. In this case, we will use the default computation
              ;; of epsilon: the median absolute deviation.
-             :post-generation    (fn [{:keys [population] :as opts}]
-                                   {:epsilon (tb/compute-epsilon-per-case population)})
+             :post-eval       (fn [{:keys [individuals]}]
+                                {:epsilon (tb/compute-epsilon-per-case individuals)})
              ;; To "breed" a new genome from the population, we:
              ;;   1. Select 2 parents with lexicsae selection. This will look-up
              ;;   2. Pass their genomes to subtree crossover.
              ;;   3. Mutate the resulting genome by with subtree mutation.
-             :breed              (fn [generation]
-                                   (->> (repeatedly 2 #(select generation))
-                                        (map :genome)
-                                        (apply tb/subtree-crossover)
-                                        mutate))
+             :breed           (fn [{:keys [individuals] :as state}]
+                                (->> (repeatedly 2 #(select individuals state))
+                                     (map :genome)
+                                     (apply tb/subtree-crossover)
+                                     mutate))
              ;; We compare individuals on the basis of their mean absolute error. Lower is better.
-             :individual-cmp     (comparator #(and (< (:mae %1) (:mae %2))
-                                                   (not (math/infinite? (:mae %1)))))
+             :individual-cmp  (comparator #(and (< (:mae %1) (:mae %2))
+                                                (not (math/infinite? (:mae %1)))))
              ;; We stop evolution when either:
              ;;   1. We reach 300 generations.
              ;;   2. We find an individual with zero MAE on the entire dataset.
-             :stop-fn            (fn [{:keys [step best new-best?]}]
-                                   (println "Step:" step
-                                            "Best MAE:" (:mae best)
-                                            "Best Tree Size:" (tb/tree-size (:genome best))
-                                            "Best Tree Depth:" (tb/tree-depth (:genome best)))
-                                   (cond
-                                     ;; Stop evolution after 300 generations.
-                                     (= step 300) :max-generation-reached
-                                     ;; If a new "best" individual is found (based on MEA of a batch)
-                                     ;; Test the new best individual on the full training set.
-                                     ;; If the full MAE is below 0.3, report that the solution is found
-                                     new-best? (let [y-pred (mapv (:model best) x-train)
-                                                     mae (tb/mae y-pred y-train)]
-                                                 (when (<= mae 0.2)
-                                                   :solution-found))))
+             :stop-fn         (fn [{:keys [step best new-best?]}]
+                                (println "Step:" step
+                                         "Best MAE:" (:mae best)
+                                         "Best Tree Size:" (tb/tree-size (:genome best))
+                                         "Best Tree Depth:" (tb/tree-depth (:genome best)))
+                                (cond
+                                  ;; Stop evolution after 300 generations.
+                                  (= step 300) :max-generation-reached
+                                  ;; If a new "best" individual is found (based on MEA of a batch)
+                                  ;; Test the new best individual on the full training set.
+                                  ;; If the full MAE is below 0.3, report that the solution is found
+                                  new-best? (let [y-pred (mapv (:model best) x-train)
+                                                  mae (tb/mae y-pred y-train)]
+                                              (when (<= mae 0.2)
+                                                :solution-found))))
              ;; Each generation will contain 1000 individuals.
-             :population-size    1000}))
+             :population-size 1000}))
   (shutdown-agents))
