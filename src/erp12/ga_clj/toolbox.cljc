@@ -9,8 +9,7 @@
 
   Some functions make assumptions about the structure of genomes and/or the attributes of individuals.
   See function docstrings for more details."
-  (:require [erp12.ga-clj.utils :as u]
-            [kixi.stats.core :as stat]
+  (:require [kixi.stats.core :as stat]
             [kixi.stats.math :as math]))
 
 ;; Errors / Loss
@@ -250,16 +249,17 @@
 (defn tree-size
   [tree]
   (if (sequential? tree)
-    (count (flatten tree))
+    (inc (count (flatten tree)))
     1))
 
 (defn tree-depth
   [tree]
-  (if (sequential? tree)
-    (if (empty? tree)
-      0
-      (inc (apply max (map tree-depth tree))))
-    0))
+  (inc
+    (if (sequential? tree)
+      (if (empty? tree)
+        0
+        (apply max (map tree-depth tree)))
+      0)))
 
 (defn replace-subtree
   [tree position replacement]
