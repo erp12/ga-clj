@@ -18,11 +18,9 @@
     (merge state' (post-eval state'))))
 
 (defn- next-generation
-  [state {:keys [breed population-size mapper]}]
-  (-> state
-      (dissoc :individuals)
-      (assoc :genomes (mapper (fn [_] (breed state)) (range population-size)))
-      (update :step inc)))
+  [{:keys [step] :as state} {:keys [breed population-size mapper]}]
+  {:step    (inc step)
+   :genomes (mapper (fn [_] (breed state)) (range population-size))})
 
 (defn run
   "Run a generational genetic algorithm.

@@ -36,6 +36,4 @@
                              :population-size 2
                              :mapper          map})
            {:step    1
-            :pre     true
-            :genomes (list "gtattc" "gtattc")
-            :post    true}))))
+            :genomes (list "gtattc" "gtattc")}))))
